@@ -13,8 +13,8 @@ class Trader(ABC):
     def tick_decision(self) -> int:
         pass
 
-    def day_salary(self) -> None:
-        self.__cash += np.random.uniform(MIN_DAILY_SALARY, MAX_DAILY_SALARY)
+    def tick_salary(self) -> None:
+        self.__cash += np.random.uniform(MIN_DAILY_SALARY, MAX_DAILY_SALARY) / 3600.0
 
     def add_position(self, position: int, current_price: float) -> None:
         self.__positions += position
@@ -28,12 +28,12 @@ class Trader(ABC):
 
 class RandomTrader(Trader): #1000
 
-    RANDOM_TRADE_MIN = 0.06
-    RANDOM_TRADE_MAX = 0.18
-    OPERATION_RATE_PER_TICK = 0.10
+    RANDOM_BUY_MIN = 0.3
+    RANDOM_BUY_MAX = 0.5
+    OPERATION_RATE_PER_TICK = 0.15
     START_CASH = 20000.0
     START_CASH_SCALE = 3000
-    MIN_START_POSITION = 80
+    MIN_START_POSITION = 150
     MAX_START_POSITION = 210
     MIN_INCREASE_POSITION_FROM_CASH = 0.10
     MAX_INCREASE_POSITION_FROM_CASH = 0.25
@@ -43,66 +43,63 @@ class RandomTrader(Trader): #1000
 
     def __init__(self) -> None:
         cash = self.START_CASH + np.random.normal(0, self.START_CASH_SCALE)
-        positions = np.random.uniform(self.MIN_START_POSITION, self.MAX_START_POSITION)
+        positions = np.random.randint(self.MIN_START_POSITION, self.MAX_START_POSITION)
         super().__init__(cash, positions)
     
     def tick_decision(self, current_price) -> int:
         if self.get_cash() < self.LOWEST_CASH_ACCEPTABLE:
             return 0
-        if np.random() < self.OPERATION_RATE_PER_TICK:
-            if np.random() < 0.5:
-                return self.get_cash() // current_price // (1.0 / np.random.uniform(self.RANDOM_TRADE_MIN, self.RANDOM_TRADE_MAX))
+        if np.random.rand() < self.OPERATION_RATE_PER_TICK:
+            if np.random.rand() < 0.5:
+                return int(self.get_cash() / current_price * np.random.uniform(self.RANDOM_BUY_MIN, self.RANDOM_BUY_MAX))
             else:
-                return -self.get_positions() // (1.0 / np.random.uniform(self.RANDOM_TRADE_MIN, self.RANDOM_TRADE_MAX))
+                return int(-self.get_positions())
         return 0
 
 class TrendTrader(Trader): #600
 
-    START_CASH = 25000.0
+    START_CASH = 30000.0
     START_CASH_SCALE = 3500
     MIN_START_POSITION = 200
-    MAX_START_POSITION = 500
-    INCREASE_WHEN_BUY = 0.03
-    DECREASE_WHEN_SELL = -0.03
-
-    def __init__(self, price) -> None:
+    MAX_START_POSITION = 400
+    INCREASE_WHEN_BUY = 0.035
+    DECREASE_WHEN_SELL = -0.025
+    MIN_BUY_ONCE = 0.3
+    MAX_BUY_ONCE = 0.6
+    def __init__(self) -> None:
         cash = self.START_CASH + np.random.normal(0, self.START_CASH_SCALE)
-        positions = np.random.uniform(self.MIN_START_POSITION, self.MAX_START_POSITION)
+        positions = np.random.randint(self.MIN_START_POSITION, self.MAX_START_POSITION)
         super().__init__(cash, positions)
-        self.__price_when_buy = price
         self.__increase_when_buy = self.INCREASE_WHEN_BUY * np.random.uniform(0.5, 1.5)
         self.__increase_when_sell = self.DECREASE_WHEN_SELL * np.random.uniform(0.5, 1.5)
 
-    def tick_decision(self, current_price) -> int:
-        if (current_price - self.__price_when_buy) / self.__price_when_buy >= self.__increase_when_buy:
-            self.__price_when_buy = current_price
-            return self.get_cash() // current_price
-        elif (current_price - self.__price_when_buy) / self.__price_when_buy <= self.__increase_when_sell:
-            self.__price_when_buy = current_price
-            return -self.get_positions()
-        
+    def tick_decision(self, current_price, trend_50ticks) -> int:
+        if trend_50ticks >= self.__increase_when_buy:
+            return int(self.get_cash() / current_price * np.random.uniform(self.MIN_BUY_ONCE, self.MAX_BUY_ONCE))
+        elif trend_50ticks <= self.__increase_when_sell:
+            return int(-self.get_positions())
+        return 0
 
 class ValueTrader(Trader): #400
 
     START_CASH = 20000.0
-    START_CASH_SCALE = 30000
-    MIN_START_POSITION = 200
-    MAX_START_POSITION = 500
+    START_CASH_SCALE = 3000
+    MIN_START_POSITION = 120
+    MAX_START_POSITION = 280
     DECISION_DEVIATION_SCALE = 0.035
+    MIN_BUY_ONCE = 0.3
+    MAX_BUY_ONCE = 0.5
+    MIN_SELL_ONCE = 0.5
+    MAX_SELL_ONCE = 0.7
 
     def __init__(self) -> None:
         cash = self.START_CASH + np.random.normal(0, self.START_CASH_SCALE)
-        positions = np.random.uniform(self.MIN_START_POSITION, self.MAX_START_POSITION)
+        positions = np.random.randint(self.MIN_START_POSITION, self.MAX_START_POSITION)
         super().__init__(cash, positions)
 
-    def tick_decision(self, current_price, average_20days, average_5days) -> int:
-        average_20days *= 1 + np.random.normal(0, self.DECISION_DEVIATION_SCALE)
-        average_5days *= 1 + np.random.normal(0, self.DECISION_DEVIATION_SCALE)
-        if current_price < average_20days and current_price < average_5days:
-            return self.get_cash() // current_price
-        elif current_price > average_20days and current_price > average_5days:
-            return -self.get_positions()
-        elif average_20days < current_price < average_5days:
-            return -self.get_positions()
+    def tick_decision(self, current_price, basic_value) -> int:
+        basic_value *= 1 + np.random.normal(0, self.DECISION_DEVIATION_SCALE)
+        if current_price < basic_value:
+            return int(int(self.get_cash() / current_price) * np.random.uniform(self.MIN_BUY_ONCE, self.MAX_BUY_ONCE))
         else:
-            return self.get_cash() // current_price
+            return int(-self.get_positions()  * np.random.uniform(self.MIN_SELL_ONCE, self.MAX_SELL_ONCE))
