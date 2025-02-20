@@ -2,19 +2,21 @@ import numpy as np
 
 PRICE_SENSITIVITY = 0.002
 DAY_LIMIT = 0.10
+GAP_AFTER_CLOSE_COEF = 0.3
 
 class Node:
-    def __init__(self) -> None:
+    def __init__(self, total_volume: int) -> None:
         self.__buy_per_tick = 0
         self.__sell_per_tick = 0
-        self.__current_price = 100.0 + np.random.normal(0, 10)
+        self.__current_price = 95.0
         self.__day_price_history = {
             'high': [self.__current_price + np.random.uniform(1.5, 2.0)],
             'low': [self.__current_price - np.random.uniform(1.5, 2.0)],
             'open': [self.__current_price + np.random.uniform(-1.2, 1.2)],
             'close': [self.__current_price],
         }
-        self.__basic_value = self.__current_price + np.random.normal(0, 2)
+        self.__basic_value = 100.0
+        self.__total_volume = total_volume
         self.__tick_price_history = []
 
     def __get_day(self) -> int:
@@ -25,38 +27,24 @@ class Node:
     
     def get_day_price_history(self) -> list:
         return self.__day_price_history.copy()
-
-    def get_average_5days(self) -> float:
-        if self.__get_day() < 5:
-            return self.__current_price
-        else:
-            average_5days = 0.0
-            for i in range(1, 6):
-                average_5days += self.__day_price_history['close'][-i]
-            average_5days /= 5.0
-            return average_5days
-
-    def get_average_20days(self) -> float:
-        if self.__get_day() < 20:
-            return self.__current_price
-        else:
-            average_20days = 0.0
-            for i in range(1, 21):
-                average_20days += self.__day_price_history['close'][-i]
-            average_20days /= 20.0
-            return average_20days
         
-    def get_average_50ticks(self) -> float:
-        if len(self.__tick_price_history) >= 50:
-            return (self.__current_price - self.__tick_price_history[-50]) / self.__tick_price_history[-50]
+    def get_15tick_before(self) -> float:
+        if len(self.__tick_price_history) >= 15:
+            return self.__tick_price_history[-15]
         else:
-            return (self.__current_price - self.__day_price_history['close'][-1]) / self.__day_price_history['close'][-1]
+            return self.__day_price_history['close'][-1]
 
-    def buy(self, position_change) -> None:
+    def __buy(self, position_change) -> None:
         self.__buy_per_tick += position_change
 
-    def sell(self, position_change) -> None:
+    def __sell(self, position_change) -> None:
         self.__sell_per_tick += position_change
+
+    def trade(self, position_change) -> None:
+        if position_change > 0:
+            self.__buy(position_change)
+        else:
+            self.__sell(-position_change)
 
     def get_current_price(self) -> float:
         return self.__current_price
@@ -66,9 +54,12 @@ class Node:
 
     def tick_update(self) -> None:
         self.__tick_price_history.append(self.__current_price)
-        imbalance = (self.__buy_per_tick - self.__sell_per_tick) / (self.__buy_per_tick + self.__sell_per_tick + 1e-6)
-        adjusted_imbalance = np.sign(imbalance) * np.sqrt(abs(imbalance))
-        self.__current_price *= 1 + adjusted_imbalance * PRICE_SENSITIVITY
+        delta = (self.__buy_per_tick - self.__sell_per_tick) * PRICE_SENSITIVITY / self.__total_volume
+        delta *= (self.__buy_per_tick - self.__sell_per_tick) / (self.__buy_per_tick + self.__sell_per_tick + 1e-6)
+        self.__current_price *= 1 + delta
+        # if abs((self.__current_price - self.__tick_price_history[0]) / self.__tick_price_history[0]) > DAY_LIMIT:
+        #     self.__current_price = self.__tick_price_history[0] * (1 + DAY_LIMIT)
+        print(str(self.__buy_per_tick) + ' ' + str(self.__sell_per_tick))
         self.__buy_per_tick = 0
         self.__sell_per_tick = 0
     
@@ -76,9 +67,12 @@ class Node:
         self.__day_price_history['high'].append(max(self.__tick_price_history))
         self.__day_price_history['low'].append(min(self.__tick_price_history))
         self.__day_price_history['open'].append(self.__tick_price_history[0])
-        self.__day_price_history['close'].append(self.__tick_price_history[-1])
-        self.__current_price *= 1 + np.random.normal(0, 0.01)
-        self.__basic_value *= 1 + np.random.uniform(-0.02, 0.01)
+        close_price = sum(self.__tick_price_history[-301:]) / 300.0
+        self.__day_price_history['close'].append(close_price)
+        day_vol = (self.__day_price_history['high'][-1] - self.__day_price_history['low'][-1]) / self.__tick_price_history[0]
+        day_vol *= GAP_AFTER_CLOSE_COEF
+        gap = np.random.uniform(-day_vol, day_vol)
+        self.__current_price = close_price * (1 + gap)
         self.__tick_price_history = [self.__current_price]
 
 class Market:
