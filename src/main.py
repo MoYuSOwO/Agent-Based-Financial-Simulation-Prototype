@@ -5,10 +5,12 @@ import matplotlib.pyplot as plt
 import mplfinance as mpf
 import pandas as pd
 import plotly.graph_objects as go
+from random import shuffle
 
-DAY_TICK = 3600
+DAY_TICK = 14400
 
 def draw_day_price(tick_price_history: list):
+    tick_price_history = tick_price_history[100:150]
     time_seconds = list(range(len(tick_price_history)))
     plt.figure(figsize=(12, 6))
     plt.plot(time_seconds, tick_price_history, 
@@ -24,7 +26,7 @@ def draw_day_price(tick_price_history: list):
     plt.show()
     
 def draw_day_advance_kline(tick_price_history: list, name: str):
-    timestamps = pd.date_range("09:30:00", periods=len(tick_price_history), freq="5s")
+    timestamps = pd.date_range("09:30:00", periods=len(tick_price_history), freq="s")
     df = pd.DataFrame({
         'timestamp': timestamps,
         'price': tick_price_history
@@ -130,44 +132,33 @@ if __name__ == "__main__":
     random_trader: RandomTrader = []
     trend_trader: TrendTrader = []
     value_trader: ValueTrader = []
-    for i in range(0, 1000):
+    for i in range(0, 500):
         random_trader.append(RandomTrader())
-    for i in range(0, 600):
+    for i in range(0, 200):
         trend_trader.append(TrendTrader())
-    for i in range(0, 400):
+    for i in range(0, 300):
         value_trader.append(ValueTrader())
-    for tick in range(1, 110000):
+    for tick in range(1, DAY_TICK * 30 + 1):
         if tick % (DAY_TICK * 30) == 0:
             day_price_history = node.get_day_price_history()
             draw_month_advance_kline(day_price_history, str(tick // (DAY_TICK * 30)))
         if tick % DAY_TICK == 0:
             tick_price_history = node.get_tick_price_history()
+            # draw_day_price(tick_price_history)
             draw_day_advance_kline(tick_price_history, str(tick // DAY_TICK))
             node.day_update()
         current_price = node.get_current_price()
-        for i in range(0, len(random_trader)):
-            position_change = random_trader[i].tick_decision(current_price)
-            random_trader[i].add_position(position_change, current_price)
-            random_trader[i].tick_salary()
-            if position_change > 0:
-                node.buy(position_change)
-            elif position_change < 0:
-                node.sell(-position_change)
-        for i in range(0, len(trend_trader)):
-            position_change = trend_trader[i].tick_decision(current_price, node.get_average_50ticks())
-            trend_trader[i].add_position(position_change, current_price)
-            trend_trader[i].tick_salary()
-            if position_change > 0:
-                node.buy(position_change)
-            elif position_change < 0:
-                node.sell(-position_change)
-        for i in range(0, len(value_trader)):
-            position_change = value_trader[i].tick_decision(current_price, node.get_basic_value())
-            value_trader[i].add_position(position_change, current_price)
-            value_trader[i].tick_salary()
-            if position_change > 0:
-                node.buy(position_change)
-            elif position_change < 0:
-                node.sell(-position_change)
-        node.tick_update()
+        tick_MSI = node.get_MSI()
+        day_price_history = node.get_day_price_history()
+        depth = node.get_market_depth()
+        for trader in random_trader:
+            position_change = trader.tick_decision(current_price, depth)
+            node.clinch(position_change)
+        for trader in trend_trader:
+            position_change = trader.tick_decision(current_price, node.get_1080ticks_history(), tick_MSI, depth)
+            node.clinch(position_change)
+        for trader in value_trader:
+            position_change = trader.tick_decision(current_price, node.get_basic_value(), depth)
+            node.clinch(position_change)
+        node.tick_update(tick)
     

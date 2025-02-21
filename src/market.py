@@ -1,74 +1,87 @@
 import numpy as np
 
-PRICE_SENSITIVITY = 0.002
-DAY_LIMIT = 0.10
+PRICE_SENSITIVITY = 0.0004
+DAY_LIMIT = 0.07
 
 class Node:
     def __init__(self) -> None:
         self.__buy_per_tick = 0
         self.__sell_per_tick = 0
-        self.__current_price = 100.0 + np.random.normal(0, 10)
+        self.__current_price = 27.0
         self.__day_price_history = {
             'high': [self.__current_price + np.random.uniform(1.5, 2.0)],
             'low': [self.__current_price - np.random.uniform(1.5, 2.0)],
             'open': [self.__current_price + np.random.uniform(-1.2, 1.2)],
             'close': [self.__current_price],
         }
-        self.__basic_value = self.__current_price + np.random.normal(0, 2)
+        self.__basic_value = 30.0
+        self.__depth = 1000
+        self.__MSI = 0.0
         self.__tick_price_history = []
 
     def __get_day(self) -> int:
         return len(self.__day_price_history['high'])
+    
+    def __night_trade(self) -> None:
+        delta_value = np.random.uniform(-0.02, 0.02)
+        if delta_value < 0:
+            delta_value *= 2
+        self.__basic_value *= (1 + delta_value)
+        self.__depth *= 0.6
+        gap = np.random.normal(0, 0.02) + np.random.laplace(0, 0.005)
+        self.__current_price *= (1 + gap)
 
     def get_tick_price_history(self) -> list:
         return self.__tick_price_history.copy()
     
     def get_day_price_history(self) -> list:
         return self.__day_price_history.copy()
-
-    def get_average_5days(self) -> float:
-        if self.__get_day() < 5:
-            return self.__current_price
-        else:
-            average_5days = 0.0
-            for i in range(1, 6):
-                average_5days += self.__day_price_history['close'][-i]
-            average_5days /= 5.0
-            return average_5days
-
-    def get_average_20days(self) -> float:
-        if self.__get_day() < 20:
-            return self.__current_price
-        else:
-            average_20days = 0.0
-            for i in range(1, 21):
-                average_20days += self.__day_price_history['close'][-i]
-            average_20days /= 20.0
-            return average_20days
         
-    def get_average_50ticks(self) -> float:
-        if len(self.__tick_price_history) >= 50:
-            return (self.__current_price - self.__tick_price_history[-50]) / self.__tick_price_history[-50]
+    def get_1080ticks_history(self) -> float:
+        if len(self.__tick_price_history) < 600:
+            return self.__tick_price_history.copy()
         else:
-            return (self.__current_price - self.__day_price_history['close'][-1]) / self.__day_price_history['close'][-1]
+            return self.__tick_price_history[-1080:]
 
-    def buy(self, position_change) -> None:
-        self.__buy_per_tick += position_change
-
-    def sell(self, position_change) -> None:
-        self.__sell_per_tick += position_change
+    def clinch(self, position_change: int) -> None:
+        if position_change > 0:
+            self.__buy_per_tick += int(position_change)
+        else:
+            self.__sell_per_tick += int(-position_change)
 
     def get_current_price(self) -> float:
         return self.__current_price
     
     def get_basic_value(self) -> float:
         return self.__basic_value
+    
+    def get_MSI(self) -> float:
+        return self.__MSI
+    
+    def get_market_depth(self) -> int:
+        return self.__depth
+    
+    def __update_depth(self) -> None:
+        self.__depth = max(500, int(0.9 * self.__depth + 0.1 * (self.__buy_per_tick + self.__sell_per_tick)))
+        self.__depth = min(self.__depth, 5000)
+    
+    def __update_MSI(self) -> None:
+        self.__MSI = np.tanh(5 * (self.__buy_per_tick - self.__sell_per_tick) / self.__depth)
 
-    def tick_update(self) -> None:
+    def __update_price(self) -> None:
+        delta = (self.__buy_per_tick - self.__sell_per_tick) / np.sqrt(self.__buy_per_tick + self.__sell_per_tick + self.__depth)
+        delta *= np.exp(-0.1 * ((np.abs(self.__buy_per_tick - self.__sell_per_tick) / self.__depth) ** 2))
+        self.__current_price *= 1 + delta * PRICE_SENSITIVITY
+        self.__current_price += np.random.normal(0, 0.0001)
+        self.__current_price = round(float(self.__current_price), 4)
+        if (self.__current_price - self.__tick_price_history[0]) / self.__tick_price_history[0] >= DAY_LIMIT:
+            self.__current_price = self.__tick_price_history[0] * (1 + DAY_LIMIT)
+
+    def tick_update(self, tick=0) -> None:
         self.__tick_price_history.append(self.__current_price)
-        imbalance = (self.__buy_per_tick - self.__sell_per_tick) / (self.__buy_per_tick + self.__sell_per_tick + 1e-6)
-        adjusted_imbalance = np.sign(imbalance) * np.sqrt(abs(imbalance))
-        self.__current_price *= 1 + adjusted_imbalance * PRICE_SENSITIVITY
+        self.__update_depth()
+        self.__update_price()
+        self.__update_MSI()
         self.__buy_per_tick = 0
         self.__sell_per_tick = 0
     
@@ -77,8 +90,7 @@ class Node:
         self.__day_price_history['low'].append(min(self.__tick_price_history))
         self.__day_price_history['open'].append(self.__tick_price_history[0])
         self.__day_price_history['close'].append(self.__tick_price_history[-1])
-        self.__current_price *= 1 + np.random.normal(0, 0.01)
-        self.__basic_value *= 1 + np.random.uniform(-0.02, 0.01)
+        self.__night_trade()
         self.__tick_price_history = [self.__current_price]
 
 class Market:
