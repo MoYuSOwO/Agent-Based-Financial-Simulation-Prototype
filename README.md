@@ -26,6 +26,7 @@ An agent-based financial market simulation prototype exploring how heterogeneous
   - Order flow-driven price determination
   - Dynamic market depth adjustment
   - Configurable trading sessions
+  - When the number of Agents remains within a specific proportional range, it ensures sustained stable market operations. However, exceeding this range triggers unstable market fluctuations. This phenomenon inversely validates the model’s effectiveness in alignment with established academic theoretical frameworks.
 - 📊 Basic Analytics
   - Tick-level transaction recording
   - Auto-generated OHLC candlestick data
@@ -33,37 +34,25 @@ An agent-based financial market simulation prototype exploring how heterogeneous
 ## Agent Models
 
 ### Noise Traders (NT)
-- **Logic**: Random order generation
-- **Key Parameters**:
-  ```python
-  {
-      "trade_prob": 0.3,    # Order probability per tick
-      "max_volume": 5       # Maximum shares per order
-  }
-  ```
+- **Decision Logic**: Random order generation
 
 ### Momentum Traders (MT)
 - **Decision Logic**:
   ```math
-  \text{Signal} = \frac{\text{Price}_t - \text{SMA}_t}{\sigma_t}
+  \text{Signal} = \frac{\text{P}_{t} - \text{SMA}_{t}}{\sigma_{t}}
   ```
-- **Risk Controls**:
-  - Dynamic cooling periods
-  - Position limits
 
 ### Value Investors (VI)
-- **Valuation Model**:
-  ```math
-  IV_t = \frac{D}{r - g} \times (1 + \epsilon)
-  ```
-  - D: Dividend, r: Discount rate, g: Growth rate, ε: Valuation error
+- **Decision Logic**: Make decisions by comparing current prices with predefined fundamental values, using randomized coefficients to simulate individualized agent behaviors.
 
 ## Future Roadmap
 
 ### Model Extensions
-- [ ] New agent types (HFT, Market Makers)
-- [ ] Margin trading & short selling
-- [ ] Dynamic fundamental analysis models
+- [ ] Add new agent types (HFT, Market Makers)
+- [ ] Implement leverage & short selling mechanisms
+- [ ] Dynamic corporate fundamentals evolution models
+- [ ] Extend to multi-asset market from single-stock
+- [ ] Introduce financial derivatives
 
 ### System Improvements
 - [ ] Distributed computing support
@@ -106,19 +95,4 @@ Please follow our [Contribution Guidelines](CONTRIBUTING.md).
 This project is licensed under the [MIT License](LICENSE). Academic references should cite this project.
 
 ---
-**Research Collaboration**: Universities and institutions are welcome to collaborate on financial complexity research. Contact: research@simfinance.org
-```
-
-### 文件管理建议：
-1. **主README**：`README.md` (英文版)
-2. **中文README**：`README_ZH.md`
-3. **在英文README顶部添加语言切换链接**：
-   ```markdown
-   🇨🇳 [中文文档](README_ZH.md) | 🇬🇧 **English**
-   ```
-4. **在中文README中反向链接**：
-   ```markdown
-   🇬🇧 [English Documentation](README.md) | 🇨🇳 **中文**
-   ```
-
-这种结构符合GitHub的默认文档规范，同时保持双语用户的易访问性。
+**Research Collaboration**: Universities and institutions are welcome to collaborate on financial complexity research. Contact: 124090210@link.cuhk.edu.cn
