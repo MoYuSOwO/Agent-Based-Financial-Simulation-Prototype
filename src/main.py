@@ -2,10 +2,8 @@ from datetime import datetime, timedelta
 from market import Node
 from trader import RandomTrader, TrendTrader, ValueTrader
 import matplotlib.pyplot as plt
-import mplfinance as mpf
 import pandas as pd
 import plotly.graph_objects as go
-from random import shuffle
 
 DAY_TICK = 14400
 
@@ -134,7 +132,7 @@ if __name__ == "__main__":
     value_trader: ValueTrader = []
     for i in range(0, 500):
         random_trader.append(RandomTrader())
-    for i in range(0, 200):
+    for i in range(0, 50):
         trend_trader.append(TrendTrader())
     for i in range(0, 300):
         value_trader.append(ValueTrader())
@@ -148,14 +146,13 @@ if __name__ == "__main__":
             draw_day_advance_kline(tick_price_history, str(tick // DAY_TICK))
             node.day_update()
         current_price = node.get_current_price()
-        tick_MSI = node.get_MSI()
         day_price_history = node.get_day_price_history()
         depth = node.get_market_depth()
         for trader in random_trader:
             position_change = trader.tick_decision(current_price, depth)
             node.clinch(position_change)
         for trader in trend_trader:
-            position_change = trader.tick_decision(current_price, node.get_1080ticks_history(), tick_MSI, depth)
+            position_change = trader.tick_decision(current_price, node.get_1080ticks_history(), depth)
             node.clinch(position_change)
         for trader in value_trader:
             position_change = trader.tick_decision(current_price, node.get_basic_value(), depth)

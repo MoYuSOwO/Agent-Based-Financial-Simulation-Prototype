@@ -1,7 +1,8 @@
 import numpy as np
 
-PRICE_SENSITIVITY = 0.0004
+PRICE_SENSITIVITY = 0.01
 DAY_LIMIT = 0.07
+START_MARKET_DEPTH = 1000
 
 class Node:
     def __init__(self) -> None:
@@ -14,9 +15,8 @@ class Node:
             'open': [self.__current_price + np.random.uniform(-1.2, 1.2)],
             'close': [self.__current_price],
         }
-        self.__basic_value = 30.0
-        self.__depth = 1000
-        self.__MSI = 0.0
+        self.__basic_value = 45.0
+        self.__depth = START_MARKET_DEPTH
         self.__tick_price_history = []
 
     def __get_day(self) -> int:
@@ -24,8 +24,6 @@ class Node:
     
     def __night_trade(self) -> None:
         delta_value = np.random.uniform(-0.02, 0.02)
-        if delta_value < 0:
-            delta_value *= 2
         self.__basic_value *= (1 + delta_value)
         self.__depth *= 0.6
         gap = np.random.normal(0, 0.02) + np.random.laplace(0, 0.005)
@@ -55,23 +53,20 @@ class Node:
     def get_basic_value(self) -> float:
         return self.__basic_value
     
-    def get_MSI(self) -> float:
-        return self.__MSI
-    
     def get_market_depth(self) -> int:
         return self.__depth
     
     def __update_depth(self) -> None:
-        self.__depth = max(500, int(0.9 * self.__depth + 0.1 * (self.__buy_per_tick + self.__sell_per_tick)))
-        self.__depth = min(self.__depth, 5000)
-    
-    def __update_MSI(self) -> None:
-        self.__MSI = np.tanh(5 * (self.__buy_per_tick - self.__sell_per_tick) / self.__depth)
+        self.__depth = 0.8 * self.__depth + 0.2 * (START_MARKET_DEPTH + 0.2 * (self.__buy_per_tick + self.__sell_per_tick))
 
     def __update_price(self) -> None:
-        delta = (self.__buy_per_tick - self.__sell_per_tick) / np.sqrt(self.__buy_per_tick + self.__sell_per_tick + self.__depth)
-        delta *= np.exp(-0.1 * ((np.abs(self.__buy_per_tick - self.__sell_per_tick) / self.__depth) ** 2))
-        self.__current_price *= 1 + delta * PRICE_SENSITIVITY
+        net_flow = self.__buy_per_tick - self.__sell_per_tick
+        adjust_net = ((np.sign(net_flow) * np.sqrt(abs(net_flow))) / (1 + 0.1 * abs(net_flow)))
+        lambda_t = 1.0 / np.sqrt(self.__depth)
+        delta = lambda_t * adjust_net * PRICE_SENSITIVITY
+        if delta > 0.001:
+            print(str(self.__buy_per_tick) + " " + str(self.__sell_per_tick) + " " + str(self.__depth))
+        self.__current_price *= 1 + delta
         self.__current_price += np.random.normal(0, 0.0001)
         self.__current_price = round(float(self.__current_price), 4)
         if (self.__current_price - self.__tick_price_history[0]) / self.__tick_price_history[0] >= DAY_LIMIT:
@@ -81,7 +76,7 @@ class Node:
         self.__tick_price_history.append(self.__current_price)
         self.__update_depth()
         self.__update_price()
-        self.__update_MSI()
+        # print("tick " + str(tick) + ": " + "buy:" + str(self.__buy_per_tick) + " sell:" + str(self.__sell_per_tick) + " depth:" + str(self.__depth))
         self.__buy_per_tick = 0
         self.__sell_per_tick = 0
     
