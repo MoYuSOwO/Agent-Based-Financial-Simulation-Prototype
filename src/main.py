@@ -24,16 +24,22 @@ def draw_day_price(tick_price_history: list):
     plt.show()
     
 def draw_day_advance_kline(tick_price_history: list, name: str):
-    timestamps = pd.date_range("09:30:00", periods=len(tick_price_history), freq="s")
+    trading_hours = [
+        (pd.Timestamp("09:30:00"), pd.Timestamp("11:30:00")),
+        (pd.Timestamp("13:00:00"), pd.Timestamp("15:00:00"))
+    ]
+    timestamps = pd.DatetimeIndex([])
+    for start, end in trading_hours:
+        timestamps = timestamps.union(pd.date_range(start, end, freq="s"))
     df = pd.DataFrame({
         'timestamp': timestamps,
         'price': tick_price_history
     })
-    kline_df = df.resample('2min', on='timestamp').agg({
+    kline_df = df.resample('2min', on='timestamp', origin='start').agg({
         'price': ['first', 'last', 'max', 'min']
     })
     kline_df.columns = ['open', 'close', 'high', 'low']
-    kline_df = kline_df.dropna()
+    kline_df = kline_df.between_time("09:30", "15:00").dropna()
     # 创建交互式K线图
     fig = go.Figure(data=[go.Candlestick(
         x=kline_df.index,  # 时间轴
@@ -132,7 +138,7 @@ if __name__ == "__main__":
     value_trader: ValueTrader = []
     for i in range(0, 500):
         random_trader.append(RandomTrader())
-    for i in range(0, 50):
+    for i in range(0, 200):
         trend_trader.append(TrendTrader())
     for i in range(0, 300):
         value_trader.append(ValueTrader())

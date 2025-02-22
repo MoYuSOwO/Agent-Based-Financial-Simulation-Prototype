@@ -84,7 +84,7 @@ class Node:
         self.__day_price_history['high'].append(max(self.__tick_price_history))
         self.__day_price_history['low'].append(min(self.__tick_price_history))
         self.__day_price_history['open'].append(self.__tick_price_history[0])
-        self.__day_price_history['close'].append(self.__tick_price_history[-1])
+        self.__day_price_history['close'].append(sum(self.__tick_price_history[-300:]) / 300)
         self.__night_trade()
         self.__tick_price_history = [self.__current_price]
 

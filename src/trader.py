@@ -90,8 +90,8 @@ class RandomTrader(Trader): #400
 
 class TrendTrader(Trader): #600
 
-    MIN_START_CASH = 20000.0
-    MAX_START_CASH = 60000.0
+    MIN_START_CASH = 6000.0
+    MAX_START_CASH = 12000.0
     MIN_START_POSITION = 100
     MAX_START_POSITION = 300
     BUY_MIN = 0.1
