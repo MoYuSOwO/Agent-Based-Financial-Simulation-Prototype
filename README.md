@@ -58,27 +58,12 @@ An agent-based financial market simulation prototype exploring how heterogeneous
 - [ ] Distributed computing support
 - [ ] Real-time visualization dashboard
 - [ ] Historical backtesting interface
+- [ ] Multi-language support with separate config files
 
 ### Academic Validation
 - [ ] Return distribution analysis (fat-tail verification)
 - [ ] Volatility clustering simulation
 - [ ] Market microstructure analysis
-
-## Bilingual Support
-
-We provide dual-language support through:
-1. Main documentation in English with key Chinese terminology
-2. Separate [Chinese documentation](README_ZH.md)
-3. Bilingual code comments
-4. Multi-language config labels:
-   ```json
-   {
-       "parameter_description": {
-           "name": "n_nt",
-           "description": "Number of Noise Traders/噪声交易者数量"
-       }
-   }
-   ```
 
 ## Contributing
 
