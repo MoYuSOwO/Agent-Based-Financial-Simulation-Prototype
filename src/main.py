@@ -25,15 +25,15 @@ def draw_day_price(tick_price_history: list):
     
 def draw_day_advance_kline(tick_price_history: list, name: str):
     trading_hours = [
-        (pd.Timestamp("09:30:00"), pd.Timestamp("11:30:00")),
-        (pd.Timestamp("13:00:00"), pd.Timestamp("15:00:00"))
+        (pd.Timestamp("09:30:00"), pd.Timestamp("11:29:59")),
+        (pd.Timestamp("13:00:00"), pd.Timestamp("14:59:58"))
     ]
     timestamps = pd.DatetimeIndex([])
     for start, end in trading_hours:
         timestamps = timestamps.union(pd.date_range(start, end, freq="s"))
     df = pd.DataFrame({
         'timestamp': timestamps,
-        'price': tick_price_history
+        'price': tick_price_history[0:14399]
     })
     kline_df = df.resample('2min', on='timestamp', origin='start').agg({
         'price': ['first', 'last', 'max', 'min']

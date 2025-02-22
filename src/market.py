@@ -23,8 +23,8 @@ class Node:
         return len(self.__day_price_history['high'])
     
     def __night_trade(self) -> None:
-        delta_value = np.random.uniform(-0.02, 0.02)
-        self.__basic_value *= (1 + delta_value)
+        # delta_value = np.random.uniform(-0.02, 0.02)
+        # self.__basic_value *= (1 + delta_value)
         self.__depth *= 0.6
         gap = np.random.normal(0, 0.02) + np.random.laplace(0, 0.005)
         self.__current_price *= (1 + gap)
