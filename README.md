@@ -47,6 +47,9 @@ An agent-based financial market simulation prototype exploring how heterogeneous
 
 ## Future Roadmap
 
+### Performance Optimization
+- [ ] Reduce time complexity of code
+
 ### Model Extensions
 - [ ] Add new agent types (HFT, Market Makers)
 - [ ] Implement leverage & short selling mechanisms
