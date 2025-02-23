@@ -4,6 +4,7 @@ from trader import RandomTrader, TrendTrader, ValueTrader
 import matplotlib.pyplot as plt
 import pandas as pd
 import plotly.graph_objects as go
+from VectorizationTrader import NoiseTrader, MomentumTrader, ValueInvestors
 
 DAY_TICK = 14400
 
@@ -133,35 +134,29 @@ def draw_month_advance_kline(day_price_history: list, name: str):
 
 if __name__ == "__main__":
     node = Node()
-    random_trader: RandomTrader = []
-    trend_trader: TrendTrader = []
-    value_trader: ValueTrader = []
-    for i in range(0, 500):
-        random_trader.append(RandomTrader())
-    for i in range(0, 200):
-        trend_trader.append(TrendTrader())
-    for i in range(0, 300):
-        value_trader.append(ValueTrader())
+    noise_trader = NoiseTrader(500)
+    momentum_trader = MomentumTrader(200)
+    value_investor = ValueInvestors(300)
     for tick in range(1, DAY_TICK * 30 + 1):
         if tick % (DAY_TICK * 30) == 0:
             day_price_history = node.get_day_price_history()
             draw_month_advance_kline(day_price_history, str(tick // (DAY_TICK * 30)))
         if tick % DAY_TICK == 0:
             tick_price_history = node.get_tick_price_history()
-            # draw_day_price(tick_price_history)
             draw_day_advance_kline(tick_price_history, str(tick // DAY_TICK))
             node.day_update()
         current_price = node.get_current_price()
-        day_price_history = node.get_day_price_history()
-        depth = node.get_market_depth()
-        for trader in random_trader:
-            position_change = trader.tick_decision(current_price, depth)
-            node.clinch(position_change)
-        for trader in trend_trader:
-            position_change = trader.tick_decision(current_price, node.get_1080ticks_history(), depth)
-            node.clinch(position_change)
-        for trader in value_trader:
-            position_change = trader.tick_decision(current_price, node.get_basic_value(), depth)
-            node.clinch(position_change)
+        buy_amount, sell_amount = noise_trader.tick_decision(current_price)
+        node.clinch(buy_amount)
+        node.clinch(sell_amount)
+        # print("tick: " + str(tick) + " rbuy: " + str(buy_amount) + " rsell: " + str(sell_amount))
+        buy_amount, sell_amount = momentum_trader.tick_decision(current_price)
+        node.clinch(buy_amount)
+        node.clinch(sell_amount)
+        # print(" mbuy: " + str(buy_amount) + " msell: " + str(sell_amount))
+        buy_amount, sell_amount = value_investor.tick_decision(current_price, node.get_basic_value())
+        node.clinch(buy_amount)
+        node.clinch(sell_amount)
+        # print(" vbuy: " + str(buy_amount) + " vsell: " + str(sell_amount))
         node.tick_update(tick)
     

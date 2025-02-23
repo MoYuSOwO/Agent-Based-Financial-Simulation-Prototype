@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import numpy as np
-from scipy.stats import pareto
 
 class Trader(ABC):
 

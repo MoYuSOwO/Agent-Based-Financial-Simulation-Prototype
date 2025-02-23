@@ -1,6 +1,6 @@
 import numpy as np
 
-PRICE_SENSITIVITY = 0.01
+PRICE_SENSITIVITY = 0.001
 DAY_LIMIT = 0.07
 START_MARKET_DEPTH = 1000
 
@@ -8,7 +8,7 @@ class Node:
     def __init__(self) -> None:
         self.__buy_per_tick = 0
         self.__sell_per_tick = 0
-        self.__current_price = 27.0
+        self.__current_price = 35.0
         self.__day_price_history = {
             'high': [self.__current_price + np.random.uniform(1.5, 2.0)],
             'low': [self.__current_price - np.random.uniform(1.5, 2.0)],
@@ -61,7 +61,7 @@ class Node:
 
     def __update_price(self) -> None:
         net_flow = self.__buy_per_tick - self.__sell_per_tick
-        adjust_net = ((np.sign(net_flow) * np.sqrt(abs(net_flow))) / (1 + 0.1 * abs(net_flow)))
+        adjust_net = ((np.sign(net_flow) * np.sqrt(abs(net_flow))) / (1 + 0.05 * np.sqrt(abs(net_flow))))
         lambda_t = 1.0 / np.sqrt(self.__depth)
         delta = lambda_t * adjust_net * PRICE_SENSITIVITY
         if delta > 0.001:
@@ -69,8 +69,8 @@ class Node:
         self.__current_price *= 1 + delta
         self.__current_price += np.random.normal(0, 0.0001)
         self.__current_price = round(float(self.__current_price), 4)
-        if (self.__current_price - self.__tick_price_history[0]) / self.__tick_price_history[0] >= DAY_LIMIT:
-            self.__current_price = self.__tick_price_history[0] * (1 + DAY_LIMIT)
+        # if (self.__current_price - self.__tick_price_history[0]) / self.__tick_price_history[0] >= DAY_LIMIT:
+        #     self.__current_price = self.__tick_price_history[0] * (1 + DAY_LIMIT)
 
     def tick_update(self, tick=0) -> None:
         self.__tick_price_history.append(self.__current_price)
@@ -85,7 +85,7 @@ class Node:
         self.__day_price_history['low'].append(min(self.__tick_price_history))
         self.__day_price_history['open'].append(self.__tick_price_history[0])
         self.__day_price_history['close'].append(sum(self.__tick_price_history[-300:]) / 300)
-        self.__night_trade()
+        # self.__night_trade()
         self.__tick_price_history = [self.__current_price]
 
 class Market:
