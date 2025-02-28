@@ -85,4 +85,4 @@ Please follow our [Contribution Guidelines](CONTRIBUTING.md).
 This project is licensed under the [MIT License](LICENSE). Academic references should cite this project.
 
 ---
-**Research Collaboration**: Universities and institutions are welcome to collaborate on financial complexity research. Contact: 124090210@link.cuhk.edu.cn
+**Research Collaboration**: Universities and institutions are welcome to collaborate on financial complexity research. Contact: houjunhuang@link.cuhk.edu.cn
