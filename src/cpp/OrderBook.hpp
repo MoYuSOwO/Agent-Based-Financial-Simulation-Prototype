@@ -43,7 +43,13 @@ class OrderBook {
         void cancelOrder(unsigned int order_id);
         OrderResult getOrder(unsigned int order_id);
         double getCurrentPrice();
+        double getBuyPrice();
+        double getSellPrice();
+        unsigned int getBuyVolume();
+        unsigned int getSellVolume();
     private:
+        unsigned int totalBuyVolume;
+        unsigned int totalSellVolume;
         unsigned int next_id;
         double current_price;
         std::unordered_map<unsigned int, Order> orders;
