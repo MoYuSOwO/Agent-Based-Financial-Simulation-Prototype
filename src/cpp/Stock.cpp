@@ -1,4 +1,8 @@
-#include "OrderBook.hpp"
+#include "Stock.hpp"
+#include <algorithm>
+#include <iostream>
+
+const double INF = 1e9;
 
 OrderBook::OrderBook(double start_price) {
     next_id = 1;
@@ -126,7 +130,7 @@ void OrderBook::matchOrders(Order& order) {
         else {
             while (!buy_orders.empty() && order.filled_quantity < order.quantity) {
                 Order* best = *buy_orders.begin();
-                if (best->price > order.price) {
+                if (best->price < order.price) {
                     auto& ref = orders[order.id];
                     auto iter = sell_orders.insert(&ref);
                     order_iterators[order.id] = iter;
@@ -175,4 +179,51 @@ unsigned int OrderBook::getBuyVolume() {
 
 unsigned int OrderBook::getSellVolume() {
     return totalSellVolume;
+}
+
+void OrderBook::resetAll() {
+    buy_orders.clear();
+    sell_orders.clear();
+    order_iterators.clear();
+    orders.clear();
+    totalBuyVolume = 0;
+    totalSellVolume = 0;
+    next_id = 1;
+}
+
+void OrderBook::__printOrderBook__() {
+    std::cout << "Buy Orders:" << std::endl;
+    for (auto it = buy_orders.begin(); it != buy_orders.end(); it++) {
+        std::cout << "Order ID: " << (*it)->id << " Quantity: " << (*it)->quantity - (*it)->filled_quantity << " Price: " << (*it)->price << " Filled_Price: " << (*it)->filled_price << std::endl;
+    }
+    std::cout << "Sell Orders:" << std::endl;
+    for (auto it = sell_orders.begin(); it != sell_orders.end(); it++) {
+        std::cout << "Order ID: " << (*it)->id << " Quantity: " << (*it)->quantity - (*it)->filled_quantity << " Price: " << (*it)->price << " Filled_Price: " << (*it)->filled_price << std::endl;
+    }
+    std::cout << "Current Price: " << current_price << std::endl;
+    std::cout << "Buy Volume: " << totalBuyVolume << std::endl;
+    std::cout << "Sell Volume: " << totalSellVolume << std::endl;
+}
+
+Stock::Stock(double basicValue, double startPrice) {
+    orderbook = OrderBook(startPrice);
+    basicValue = basicValue;
+    currentDay = {-INF, INF, 0.0, 0.0};
+}
+
+void Stock::tickUpdate() {
+    tickPriceDaily.push_back(orderbook.getCurrentPrice());
+    if (tickPriceDaily.size() > 1) {
+        currentDay.high = std::max(currentDay.high, tickPriceDaily.back());
+        currentDay.low = std::min(currentDay.low, tickPriceDaily.back());
+        currentDay.close = tickPriceDaily.back();
+        currentDay.open = tickPriceDaily.front();
+    }
+}
+
+void Stock::dayUpdate() {
+    dayPriceHistory.push_back(currentDay);
+    tickPriceDaily.clear();
+    orderbook.resetAll();
+    currentDay = {-INF, INF, 0.0, 0.0};
 }

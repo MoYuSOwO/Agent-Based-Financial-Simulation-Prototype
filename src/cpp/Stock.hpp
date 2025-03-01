@@ -1,5 +1,6 @@
 #include <set>
 #include <unordered_map>
+#include <vector>
 
 enum OrderStatus {
     Pending,
@@ -38,7 +39,7 @@ struct Order {
 
 class OrderBook {
     public:
-        OrderBook(double start_price=100.0) {}
+        OrderBook(double start_price=100.0);
         unsigned int addOrder(unsigned int quantity, OrderDirection direction, OrderType type=Market, double price=0.0);
         void cancelOrder(unsigned int order_id);
         OrderResult getOrder(unsigned int order_id);
@@ -47,6 +48,8 @@ class OrderBook {
         double getSellPrice();
         unsigned int getBuyVolume();
         unsigned int getSellVolume();
+        void resetAll();
+        void __printOrderBook__();
     private:
         unsigned int totalBuyVolume;
         unsigned int totalSellVolume;
@@ -69,4 +72,21 @@ class OrderBook {
         std::multiset<Order*, BuyComparator> buy_orders;
         std::multiset<Order*, SellComparator> sell_orders;
         void matchOrders(Order& order);
+};
+
+struct dayPrice {
+    double high, low, open, close;
+};
+
+class Stock {
+    public:
+        Stock(double basicValue=100.0, double startPrice=100.0);
+        OrderBook orderbook;
+        void tickUpdate();
+        void dayUpdate();
+        double basicValue;
+    private:
+        dayPrice currentDay;
+        std::vector<dayPrice> dayPriceHistory;
+        std::vector<double> tickPriceDaily;
 };
